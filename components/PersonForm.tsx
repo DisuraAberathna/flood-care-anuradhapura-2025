@@ -109,6 +109,9 @@ export default function PersonForm({ person, onSubmit, onCancel }: PersonFormPro
   const [nextRowId, setNextRowId] = useState(1);
   const [nextFamilyRowId, setNextFamilyRowId] = useState(2000);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [duplicatePerson, setDuplicatePerson] = useState<any>(null);
+  const [pendingSubmitData, setPendingSubmitData] = useState<any>(null);
   
   // Initialize divisional secretariat from existing location if editing
   const getDivisionalSecretariatFromLocation = (location: string): string => {
@@ -330,28 +333,66 @@ export default function PersonForm({ person, onSubmit, onCancel }: PersonFormPro
       family_members: familyMembers.length > 0 ? familyMembers : undefined,
     };
 
+    // Skip duplicate check if editing existing person
+    if (person) {
+      setIsSubmitting(true);
+      try {
+        await onSubmit(submitData);
+        toast.success('Person updated successfully!');
+      } catch (error) {
+        console.error('Error submitting form:', error);
+        toast.error('Failed to save person. Please try again.');
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    // Check for duplicate before submitting
     setIsSubmitting(true);
     try {
-      await onSubmit(submitData);
-      toast.success(person ? 'Person updated successfully!' : 'Person registered successfully!');
-      if (!person) {
-        setFormData({
-          name: '',
-          age: 0,
-          nic: '',
-          number_of_members: 0,
-          address: '',
-          house_state: '',
-          location: '',
-          lost_items: [],
-          family_members: [],
-        });
-        setDivisionalSecretariat('');
-        setLostItemRows([]);
-        setFamilyMemberRows([]);
-        setNextRowId(1);
-        setNextFamilyRowId(2000);
+      const checkResponse = await fetch('/api/people/check-duplicate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          age: formData.age,
+          nic: formData.nic,
+          address: formData.address,
+          location: formData.location,
+        }),
+      });
+
+      const checkResult = await checkResponse.json();
+
+      if (checkResult.isDuplicate) {
+        // Show confirmation modal
+        setDuplicatePerson(checkResult.existingPerson);
+        setPendingSubmitData(submitData);
+        setShowDuplicateModal(true);
+        setIsSubmitting(false);
+        return;
       }
+
+      // No duplicate, proceed with submission
+      await onSubmit(submitData);
+      toast.success('Person registered successfully!');
+      setFormData({
+        name: '',
+        age: 0,
+        nic: '',
+        number_of_members: 0,
+        address: '',
+        house_state: '',
+        location: '',
+        lost_items: [],
+        family_members: [],
+      });
+      setDivisionalSecretariat('');
+      setLostItemRows([]);
+      setFamilyMemberRows([]);
+      setNextRowId(1);
+      setNextFamilyRowId(2000);
     } catch (error) {
       console.error('Error submitting form:', error);
       toast.error('Failed to save person. Please try again.');
@@ -360,7 +401,55 @@ export default function PersonForm({ person, onSubmit, onCancel }: PersonFormPro
     }
   };
 
+  const handleConfirmUpdate = async () => {
+    if (pendingSubmitData && duplicatePerson) {
+      setIsSubmitting(true);
+      try {
+        // Update the existing record
+        const updateResponse = await fetch(`/api/people/${duplicatePerson.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(pendingSubmitData),
+        });
+
+        if (updateResponse.ok) {
+          toast.success('Person updated successfully!');
+          setFormData({
+            name: '',
+            age: 0,
+            nic: '',
+            number_of_members: 0,
+            address: '',
+            house_state: '',
+            location: '',
+            lost_items: [],
+            family_members: [],
+          });
+          setDivisionalSecretariat('');
+          setLostItemRows([]);
+          setFamilyMemberRows([]);
+          setNextRowId(1);
+          setNextFamilyRowId(2000);
+          setShowDuplicateModal(false);
+          setDuplicatePerson(null);
+          setPendingSubmitData(null);
+          // Call onSubmit to refresh the list
+          await onSubmit(pendingSubmitData);
+        } else {
+          const error = await updateResponse.json();
+          toast.error(error.error || 'Failed to update person');
+        }
+      } catch (error) {
+        console.error('Error updating person:', error);
+        toast.error('Failed to update person. Please try again.');
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
   return (
+    <>
     <form onSubmit={handleSubmit} className="person-form">
       <div className="form-group">
         <label htmlFor="name">
@@ -652,6 +741,88 @@ export default function PersonForm({ person, onSubmit, onCancel }: PersonFormPro
         )}
       </div>
     </form>
+
+      {/* Duplicate Confirmation Modal */}
+      {showDuplicateModal && duplicatePerson && (
+        <div className="modal-overlay" onClick={() => setShowDuplicateModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>
+                <FaExclamationTriangle /> Duplicate Record Found
+              </h2>
+              <button
+                className="modal-close-btn"
+                onClick={() => {
+                  setShowDuplicateModal(false);
+                  setDuplicatePerson(null);
+                  setPendingSubmitData(null);
+                }}
+                aria-label="Close"
+              >
+                <FaWindowClose />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p style={{ marginBottom: '20px', fontSize: '1rem' }}>
+                A person with the same details already exists in the database:
+              </p>
+              <div className="person-details">
+                <div className="detail-section">
+                  <div className="detail-grid">
+                    <div className="detail-item">
+                      <label>Name:</label>
+                      <span>{duplicatePerson.name}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Age:</label>
+                      <span>{duplicatePerson.age}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>NIC:</label>
+                      <span>{duplicatePerson.nic || '-'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Address:</label>
+                      <span>{duplicatePerson.address}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Grama Niladari Division:</label>
+                      <span>{duplicatePerson.location || '-'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Registered Date:</label>
+                      <span>{new Date(duplicatePerson.created_at).toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p style={{ marginTop: '20px', fontSize: '0.95rem', color: '#6c757d' }}>
+                Do you want to update this existing record with the new information?
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setShowDuplicateModal(false);
+                  setDuplicatePerson(null);
+                  setPendingSubmitData(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleConfirmUpdate}
+                disabled={isSubmitting}
+              >
+                <FaSave /> Update Existing Record
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

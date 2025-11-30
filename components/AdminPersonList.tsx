@@ -389,7 +389,7 @@ export default function AdminPersonList({ people, onRefresh }: AdminPersonListPr
                           <span>{selectedPerson.nic || '-'}</span>
                         </div>
                         <div className="detail-item">
-                          <label>Number of Members:</label>
+                          <label>Number of Family Members:</label>
                           <span>{selectedPerson.number_of_members}</span>
                         </div>
                       </div>
