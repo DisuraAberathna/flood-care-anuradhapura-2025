@@ -14,7 +14,7 @@ export default function Footer() {
         </div>
         <div className="footer-item">
           <FaCode className="footer-icon" />
-          <span>Developed by <strong>Disura Aberathna</strong></span>
+          <span>Developed by <strong>Thenuwari Savindya</strong></span>
         </div>
       </div>
     </footer>
