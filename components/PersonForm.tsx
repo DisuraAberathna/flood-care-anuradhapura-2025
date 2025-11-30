@@ -2,7 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { toast } from 'react-toastify';
-import { FaUser, FaCalendarAlt, FaUsers, FaMapMarkerAlt, FaHome, FaSave, FaTimes, FaEdit, FaBox, FaPlus, FaTrash, FaIdCard, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { FaUser, FaCalendarAlt, FaUsers, FaMapMarkerAlt, FaHome, FaSave, FaTimes, FaEdit, FaBox, FaPlus, FaTrash, FaIdCard, FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaWindowClose } from 'react-icons/fa';
 import { gnList, getDivisionalSecretariats, getGNNamesBySecretariat, type GNItem } from '@/lib/locations';
 
 interface LostItem {
