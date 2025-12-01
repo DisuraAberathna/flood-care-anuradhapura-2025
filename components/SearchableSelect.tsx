@@ -14,6 +14,7 @@ interface SearchableSelectProps {
   getDisplayValue?: (value: string) => string;
   hideSearch?: boolean;
   className?: string;
+  onDisabledClick?: () => void;
 }
 
 export default function SearchableSelect({
@@ -27,6 +28,7 @@ export default function SearchableSelect({
   getDisplayValue,
   hideSearch = false,
   className = '',
+  onDisabledClick,
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,22 +41,32 @@ export default function SearchableSelect({
   // Filter options based on search term (only if search is enabled)
   const filteredOptions = hideSearch 
     ? options 
-    : options.filter((option) => {
-        const searchLower = searchTerm.toLowerCase();
-        const optionLower = option.toLowerCase();
-        // Check if search matches the option value
-        if (optionLower.includes(searchLower)) {
-          return true;
-        }
-        // If getDisplayValue is provided, also check the display value (for MPA code search)
-        if (getDisplayValue) {
-          const displayValue = getDisplayValue(option);
-          if (displayValue.toLowerCase().includes(searchLower)) {
+    : searchTerm.trim() === ''
+      ? options // Show all options if search is empty
+      : options.filter((option) => {
+          const searchLower = searchTerm.toLowerCase().trim();
+          const optionLower = option.toLowerCase();
+          // Check if search matches the option value
+          if (optionLower.includes(searchLower)) {
             return true;
           }
-        }
-        return false;
-      });
+          // If getDisplayValue is provided, also check the display value (for MPA code search)
+          if (getDisplayValue) {
+            const displayValue = getDisplayValue(option);
+            const displayLower = displayValue.toLowerCase();
+            // Check if search matches the display value (includes MPA code)
+            if (displayLower.includes(searchLower)) {
+              return true;
+            }
+            // Also check if searching by MPA code directly (e.g., "682" should match "Ulpathagama (682)")
+            // Extract MPA code from display value (format: "Name (MPA)")
+            const mpaMatch = displayLower.match(/\(([^)]+)\)/);
+            if (mpaMatch && mpaMatch[1] === searchLower) {
+              return true;
+            }
+          }
+          return false;
+        });
 
   // Get display value - if empty or 'all' and getDisplayValue returns empty, show placeholder
   const displayValue = value 
@@ -90,7 +102,12 @@ export default function SearchableSelect({
   }, [highlightedIndex, isOpen]);
 
   const handleToggle = () => {
-    if (disabled) return;
+    if (disabled) {
+      if (onDisabledClick) {
+        onDisabledClick();
+      }
+      return;
+    }
     
     if (!isOpen) {
       // Calculate if dropdown should open upward

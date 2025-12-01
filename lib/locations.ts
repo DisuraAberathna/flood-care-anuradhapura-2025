@@ -2713,9 +2713,28 @@ export function getGNItemByName(gnName: string): GNItem | undefined {
   return gnList.find((item) => item.gnName === gnName);
 }
 
+// Helper function to get GN item by name and divisional secretariat
+export function getGNItemByNameAndSecretariat(gnName: string, divisionalSecretariat: string): GNItem | undefined {
+  return gnList.find(
+    (item) => item.gnName === gnName && item.divisionalSecretariat === divisionalSecretariat
+  );
+}
+
 // Helper function to get display value with MPA code
-export function getGNDisplayValue(gnName: string): string {
-  const item = getGNItemByName(gnName);
+// If divisionalSecretariat is provided, it will find the exact match
+export function getGNDisplayValue(gnName: string, divisionalSecretariat?: string): string {
+  let item: GNItem | undefined;
+  
+  if (divisionalSecretariat) {
+    // If divisional secretariat is provided, find exact match
+    item = getGNItemByNameAndSecretariat(gnName, divisionalSecretariat);
+  }
+  
+  // Fallback to first match if no divisional secretariat or no match found
+  if (!item) {
+    item = getGNItemByName(gnName);
+  }
+  
   if (item) {
     return `${item.gnName} (${item.mpaCode})`;
   }

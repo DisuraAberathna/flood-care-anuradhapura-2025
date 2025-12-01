@@ -361,6 +361,7 @@ export default function PersonForm({ person, onSubmit, onCancel }: PersonFormPro
           nic: formData.nic,
           address: formData.address,
           location: formData.location,
+          divisionalSecretariat: divisionalSecretariat,
         }),
       });
 
@@ -474,16 +475,22 @@ export default function PersonForm({ person, onSubmit, onCancel }: PersonFormPro
         <div className="form-group-inline">
           <label htmlFor="location">
             <FaMapMarkerAlt className="label-icon" /> Grama Niladari Division * 
-            <span className="option-count">({availableGNDivisions.length} available)</span>
+            {divisionalSecretariat && (
+              <span className="option-count">({availableGNDivisions.length} available)</span>
+            )}
           </label>
           <SearchableSelect
             id="location"
             value={formData.location || ''}
             onChange={(value) => setFormData({ ...formData, location: value })}
             options={availableGNDivisions}
-            placeholder="Select Grama Niladari Division"
+            placeholder={divisionalSecretariat ? "Select Grama Niladari Division" : "Select Divisional Secretariat first"}
             required
-            getDisplayValue={getGNDisplayValue}
+            disabled={!divisionalSecretariat}
+            getDisplayValue={(val) => getGNDisplayValue(val, divisionalSecretariat)}
+            onDisabledClick={() => {
+              toast.warning('Please select a Divisional Secretariat first');
+            }}
           />
         </div>
       </div>

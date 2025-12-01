@@ -158,7 +158,8 @@ export default function AdminPersonList({ people, onRefresh }: AdminPersonListPr
   };
 
   const divisionalSecretariats = getDivisionalSecretariats();
-  const allGNDivisions = Array.from(new Set(gnList.map(item => item.gnName))).sort();
+  const allGNDivisions = gnList.map(item => item.gnName);
+  const uniqueGNDivisions = Array.from(new Set(allGNDivisions));
   const locations = ['all', ...allGNDivisions];
 
   return (
@@ -213,7 +214,7 @@ export default function AdminPersonList({ people, onRefresh }: AdminPersonListPr
               <FaFilter className="label-icon" /> Grama Niladari Division
               <span className="option-count">
                 ({divisionalSecretariatFilter === 'all' 
-                  ? allGNDivisions.length 
+                  ? uniqueGNDivisions.length 
                   : getGNNamesBySecretariat(divisionalSecretariatFilter).length} available)
               </span>
             </label>
@@ -233,7 +234,7 @@ export default function AdminPersonList({ people, onRefresh }: AdminPersonListPr
                 if (val === 'all') {
                   return divisionalSecretariatFilter === 'all' ? 'All Divisions' : 'All Divisions in Selected Secretariat';
                 }
-                return getGNDisplayValue(val);
+                return getGNDisplayValue(val, divisionalSecretariatFilter !== 'all' ? divisionalSecretariatFilter : undefined);
               }}
             />
           </div>
