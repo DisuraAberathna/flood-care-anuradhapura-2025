@@ -11,6 +11,9 @@ interface SearchableSelectProps {
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
+  getDisplayValue?: (value: string) => string;
+  hideSearch?: boolean;
+  className?: string;
 }
 
 export default function SearchableSelect({
@@ -21,21 +24,29 @@ export default function SearchableSelect({
   placeholder = 'Select an option',
   required = false,
   disabled = false,
+  getDisplayValue,
+  hideSearch = false,
+  className = '',
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [openUpward, setOpenUpward] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
-  // Filter options based on search term
-  const filteredOptions = options.filter((option) =>
-    option.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter options based on search term (only if search is enabled)
+  const filteredOptions = hideSearch 
+    ? options 
+    : options.filter((option) =>
+        option.toLowerCase().includes(searchTerm.toLowerCase())
+      );
 
-  // Get display value
-  const displayValue = value || '';
+  // Get display value - if empty or 'all' and getDisplayValue returns empty, show placeholder
+  const displayValue = value 
+    ? (getDisplayValue ? getDisplayValue(value) : value)
+    : '';
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -67,14 +78,33 @@ export default function SearchableSelect({
 
   const handleToggle = () => {
     if (disabled) return;
-    setIsOpen(!isOpen);
+    
     if (!isOpen) {
+      // Calculate if dropdown should open upward
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        const dropdownHeight = 300; // max-height of dropdown
+        
+        // Open upward if there's not enough space below but enough space above
+        if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
+          setOpenUpward(true);
+        } else {
+          setOpenUpward(false);
+        }
+      }
+      
       setSearchTerm('');
       setHighlightedIndex(-1);
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 0);
+      if (!hideSearch) {
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 0);
+      }
     }
+    
+    setIsOpen(!isOpen);
   };
 
   const handleSelect = (option: string) => {
@@ -138,9 +168,9 @@ export default function SearchableSelect({
   };
 
   return (
-    <div className="searchable-select-container" ref={containerRef}>
+    <div className={`searchable-select-container ${className}`} ref={containerRef}>
       <div
-        className={`searchable-select ${isOpen ? 'open' : ''} ${disabled ? 'disabled' : ''}`}
+        className={`searchable-select ${isOpen ? 'open' : ''} ${disabled ? 'disabled' : ''} ${className ? className : ''}`}
         onClick={handleToggle}
         onKeyDown={handleKeyDown}
         role="combobox"
@@ -155,19 +185,21 @@ export default function SearchableSelect({
         <FaChevronDown className={`searchable-select-arrow ${isOpen ? 'open' : ''}`} />
       </div>
       {isOpen && (
-        <div className="searchable-select-dropdown">
-          <div className="searchable-select-search">
-            <input
-              ref={inputRef}
-              type="text"
-              value={searchTerm}
-              onChange={handleSearchChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Search..."
-              className="searchable-select-input"
-              autoFocus
-            />
-          </div>
+        <div className={`searchable-select-dropdown ${hideSearch ? 'no-search' : ''} ${openUpward ? 'open-upward' : ''}`}>
+          {!hideSearch && (
+            <div className="searchable-select-search">
+              <input
+                ref={inputRef}
+                type="text"
+                value={searchTerm}
+                onChange={handleSearchChange}
+                onKeyDown={handleKeyDown}
+                placeholder="Search..."
+                className="searchable-select-input"
+                autoFocus
+              />
+            </div>
+          )}
           <ul
             ref={listRef}
             id={id ? `${id}-listbox` : undefined}
@@ -177,20 +209,23 @@ export default function SearchableSelect({
             {filteredOptions.length === 0 ? (
               <li className="searchable-select-option no-results">No results found</li>
             ) : (
-              filteredOptions.map((option, index) => (
-                <li
-                  key={option}
-                  className={`searchable-select-option ${
-                    option === value ? 'selected' : ''
-                  } ${index === highlightedIndex ? 'highlighted' : ''}`}
-                  onClick={() => handleSelect(option)}
-                  onMouseEnter={() => setHighlightedIndex(index)}
-                  role="option"
-                  aria-selected={option === value}
-                >
-                  {option}
-                </li>
-              ))
+              filteredOptions.map((option, index) => {
+                const displayText = getDisplayValue ? getDisplayValue(option) : option;
+                return (
+                  <li
+                    key={option}
+                    className={`searchable-select-option ${
+                      option === value ? 'selected' : ''
+                    } ${index === highlightedIndex ? 'highlighted' : ''}`}
+                    onClick={() => handleSelect(option)}
+                    onMouseEnter={() => setHighlightedIndex(index)}
+                    role="option"
+                    aria-selected={option === value}
+                  >
+                    {displayText}
+                  </li>
+                );
+              })
             )}
           </ul>
         </div>

@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { FaSearch, FaFilter, FaSort, FaSortUp, FaSortDown, FaTimes, FaHome, FaUser, FaCalendarAlt, FaUsers, FaMapMarkerAlt, FaInbox, FaBox, FaCheckCircle, FaTimesCircle, FaIdCard, FaEye, FaWindowClose, FaShieldAlt, FaExclamationTriangle, FaExclamationCircle } from 'react-icons/fa';
 import { gnList, getDivisionalSecretariats, getGNNamesBySecretariat } from '@/lib/locations';
+import SearchableSelect from './SearchableSelect';
 
 interface LostItem {
   name: string;
@@ -175,63 +176,65 @@ export default function AdminPersonList({ people, onRefresh }: AdminPersonListPr
             <label htmlFor="divisionalSecretariatFilter">
               <FaFilter className="label-icon" /> Divisional Secretariat
             </label>
-            <select
+            <SearchableSelect
               id="divisionalSecretariatFilter"
               value={divisionalSecretariatFilter}
-              onChange={(e) => {
-                setDivisionalSecretariatFilter(e.target.value);
+              onChange={(value) => {
+                setDivisionalSecretariatFilter(value);
                 // Clear location filter when divisional secretariat changes
                 setLocationFilter('all');
               }}
-              className="filter-select"
-            >
-              <option value="all">All Secretariats</option>
-              {divisionalSecretariats.map((secretariat) => (
-                <option key={secretariat} value={secretariat}>
-                  {secretariat}
-                </option>
-              ))}
-            </select>
+              options={['all', ...divisionalSecretariats]}
+              placeholder="All Secretariats"
+              getDisplayValue={(val) => val === 'all' ? 'All Secretariats' : val}
+            />
           </div>
           <div className="filter-group">
             <label htmlFor="locationFilter">
               <FaFilter className="label-icon" /> Grama Niladari Division
             </label>
-            <select
+            <SearchableSelect
               id="locationFilter"
               value={locationFilter}
-              onChange={(e) => setLocationFilter(e.target.value)}
-              className="filter-select"
-            >
-              <option value="all">
-                {divisionalSecretariatFilter === 'all' ? 'All Divisions' : 'All Divisions in Selected Secretariat'}
-              </option>
-              {(divisionalSecretariatFilter === 'all' 
-                ? allGNDivisions 
-                : getGNNamesBySecretariat(divisionalSecretariatFilter)
-              ).map((location) => (
-                <option key={location} value={location}>
-                  {location}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => setLocationFilter(value)}
+              options={[
+                'all',
+                ...(divisionalSecretariatFilter === 'all' 
+                  ? allGNDivisions 
+                  : getGNNamesBySecretariat(divisionalSecretariatFilter)
+                )
+              ]}
+              placeholder={divisionalSecretariatFilter === 'all' ? 'All Divisions' : 'All Divisions in Selected Secretariat'}
+              getDisplayValue={(val) => {
+                if (val === 'all') {
+                  return divisionalSecretariatFilter === 'all' ? 'All Divisions' : 'All Divisions in Selected Secretariat';
+                }
+                return val;
+              }}
+            />
           </div>
 
           <div className="filter-group">
             <label htmlFor="sortField">
               <FaSort className="label-icon" /> Sort By
             </label>
-            <select
+            <SearchableSelect
               id="sortField"
               value={sortField}
-              onChange={(e) => setSortField(e.target.value as SortField)}
-              className="filter-select"
-            >
-              <option value="created_at">Date Added</option>
-              <option value="name">Name</option>
-              <option value="age">Age</option>
-              <option value="house_state">House State</option>
-            </select>
+              onChange={(value) => setSortField(value as SortField)}
+              options={['created_at', 'name', 'age', 'house_state']}
+              placeholder="Sort By"
+              hideSearch={true}
+              getDisplayValue={(val) => {
+                const labels: Record<string, string> = {
+                  'created_at': 'Date Added',
+                  'name': 'Name',
+                  'age': 'Age',
+                  'house_state': 'House State'
+                };
+                return labels[val] || val;
+              }}
+            />
           </div>
 
           <button
@@ -389,7 +392,7 @@ export default function AdminPersonList({ people, onRefresh }: AdminPersonListPr
                           <span>{selectedPerson.nic || '-'}</span>
                         </div>
                         <div className="detail-item">
-                          <label>Number of Family Members:</label>
+                          <label>Number of Members:</label>
                           <span>{selectedPerson.number_of_members}</span>
                         </div>
                       </div>

@@ -589,41 +589,32 @@ export default function PersonForm({ person, onSubmit, onCancel }: PersonFormPro
           <label htmlFor="house_state">
             <FaHome className="label-icon" /> House State *
           </label>
-          <select
+          <SearchableSelect
             id="house_state"
             value={formData.house_state}
-            onChange={(e) => setFormData({ ...formData, house_state: e.target.value })}
+            onChange={(value) => setFormData({ ...formData, house_state: value })}
+            options={['Safe', 'Partially Damaged', 'Severely Damaged', 'Destroyed']}
+            placeholder="Select house state"
             required
-          >
-            <option value="">Select house state</option>
-            <option value="Safe">Safe</option>
-            <option value="Partially Damaged">Partially Damaged</option>
-            <option value="Severely Damaged">Severely Damaged</option>
-            <option value="Destroyed">Destroyed</option>
-          </select>
+            hideSearch={true}
+          />
         </div>
         <div className="form-group-inline">
           <label htmlFor="divisionalSecretariat">
             <FaMapMarkerAlt className="label-icon" /> Divisional Secretariat *
           </label>
-          <select
+          <SearchableSelect
             id="divisionalSecretariat"
             value={divisionalSecretariat}
-            onChange={(e) => {
-              const selectedSecretariat = e.target.value;
+            onChange={(selectedSecretariat) => {
               setDivisionalSecretariat(selectedSecretariat);
               // Clear location when divisional secretariat changes
               setFormData({ ...formData, location: '' });
             }}
+            options={getDivisionalSecretariats()}
+            placeholder="Select Divisional Secretariat"
             required
-          >
-            <option value="">Select Divisional Secretariat</option>
-            {getDivisionalSecretariats().map((secretariat) => (
-              <option key={secretariat} value={secretariat}>
-                {secretariat}
-              </option>
-            ))}
-          </select>
+          />
         </div>
         <div className="form-group-inline">
           <label htmlFor="location">
@@ -672,18 +663,14 @@ export default function PersonForm({ person, onSubmit, onCancel }: PersonFormPro
                     className="lost-item-name-input"
                   />
                 ) : (
-                  <select
+                  <SearchableSelect
                     value={row.name}
-                    onChange={(e) => handleUpdateLostItemRow(row.id, 'name', e.target.value)}
+                    onChange={(value) => handleUpdateLostItemRow(row.id, 'name', value)}
+                    options={LOST_ITEM_OPTIONS}
+                    placeholder="Select item"
+                    getDisplayValue={(val) => val || ''}
                     className="lost-item-name-input"
-                  >
-                    <option value="">Select item</option>
-                    {LOST_ITEM_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 )}
                 <input
                   type="number"
