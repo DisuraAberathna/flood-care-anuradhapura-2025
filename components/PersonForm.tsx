@@ -3,7 +3,7 @@
 import { useState, FormEvent } from 'react';
 import { toast } from 'react-toastify';
 import { FaUser, FaCalendarAlt, FaUsers, FaMapMarkerAlt, FaHome, FaSave, FaTimes, FaEdit, FaBox, FaPlus, FaTrash, FaIdCard, FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaWindowClose } from 'react-icons/fa';
-import { gnList, getDivisionalSecretariats, getGNNamesBySecretariat, type GNItem } from '@/lib/locations';
+import { gnList, getDivisionalSecretariats, getGNNamesBySecretariat, getGNDisplayValue, type GNItem } from '@/lib/locations';
 import SearchableSelect from './SearchableSelect';
 
 interface LostItem {
@@ -452,6 +452,42 @@ export default function PersonForm({ person, onSubmit, onCancel }: PersonFormPro
   return (
     <>
     <form onSubmit={handleSubmit} className="person-form">
+      <div className="form-group form-row">
+        <div className="form-group-inline">
+          <label htmlFor="divisionalSecretariat">
+            <FaMapMarkerAlt className="label-icon" /> Divisional Secretariat * 
+            <span className="option-count">({getDivisionalSecretariats().length} available)</span>
+          </label>
+          <SearchableSelect
+            id="divisionalSecretariat"
+            value={divisionalSecretariat}
+            onChange={(selectedSecretariat) => {
+              setDivisionalSecretariat(selectedSecretariat);
+              // Clear location when divisional secretariat changes
+              setFormData({ ...formData, location: '' });
+            }}
+            options={getDivisionalSecretariats()}
+            placeholder="Select Divisional Secretariat"
+            required
+          />
+        </div>
+        <div className="form-group-inline">
+          <label htmlFor="location">
+            <FaMapMarkerAlt className="label-icon" /> Grama Niladari Division * 
+            <span className="option-count">({availableGNDivisions.length} available)</span>
+          </label>
+          <SearchableSelect
+            id="location"
+            value={formData.location || ''}
+            onChange={(value) => setFormData({ ...formData, location: value })}
+            options={availableGNDivisions}
+            placeholder="Select Grama Niladari Division"
+            required
+            getDisplayValue={getGNDisplayValue}
+          />
+        </div>
+      </div>
+
       <div className="form-group">
         <label htmlFor="name">
           <FaUser className="label-icon" /> Name *
@@ -597,36 +633,6 @@ export default function PersonForm({ person, onSubmit, onCancel }: PersonFormPro
             placeholder="Select house state"
             required
             hideSearch={true}
-          />
-        </div>
-        <div className="form-group-inline">
-          <label htmlFor="divisionalSecretariat">
-            <FaMapMarkerAlt className="label-icon" /> Divisional Secretariat *
-          </label>
-          <SearchableSelect
-            id="divisionalSecretariat"
-            value={divisionalSecretariat}
-            onChange={(selectedSecretariat) => {
-              setDivisionalSecretariat(selectedSecretariat);
-              // Clear location when divisional secretariat changes
-              setFormData({ ...formData, location: '' });
-            }}
-            options={getDivisionalSecretariats()}
-            placeholder="Select Divisional Secretariat"
-            required
-          />
-        </div>
-        <div className="form-group-inline">
-          <label htmlFor="location">
-            <FaMapMarkerAlt className="label-icon" /> Grama Niladari Division *
-          </label>
-          <SearchableSelect
-            id="location"
-            value={formData.location || ''}
-            onChange={(value) => setFormData({ ...formData, location: value })}
-            options={availableGNDivisions}
-            placeholder="Select Grama Niladari Division"
-            required
           />
         </div>
       </div>

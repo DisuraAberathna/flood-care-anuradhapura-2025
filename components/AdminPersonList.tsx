@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { FaSearch, FaFilter, FaSort, FaSortUp, FaSortDown, FaTimes, FaHome, FaUser, FaCalendarAlt, FaUsers, FaMapMarkerAlt, FaInbox, FaBox, FaCheckCircle, FaTimesCircle, FaIdCard, FaEye, FaWindowClose, FaShieldAlt, FaExclamationTriangle, FaExclamationCircle, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import { gnList, getDivisionalSecretariats, getGNNamesBySecretariat } from '@/lib/locations';
+import { gnList, getDivisionalSecretariats, getGNNamesBySecretariat, getGNDisplayValue } from '@/lib/locations';
 import SearchableSelect from './SearchableSelect';
 
 interface LostItem {
@@ -193,6 +193,7 @@ export default function AdminPersonList({ people, onRefresh }: AdminPersonListPr
           <div className="filter-group">
             <label htmlFor="divisionalSecretariatFilter">
               <FaFilter className="label-icon" /> Divisional Secretariat
+              <span className="option-count">({divisionalSecretariats.length} available)</span>
             </label>
             <SearchableSelect
               id="divisionalSecretariatFilter"
@@ -210,6 +211,11 @@ export default function AdminPersonList({ people, onRefresh }: AdminPersonListPr
           <div className="filter-group">
             <label htmlFor="locationFilter">
               <FaFilter className="label-icon" /> Grama Niladari Division
+              <span className="option-count">
+                ({divisionalSecretariatFilter === 'all' 
+                  ? allGNDivisions.length 
+                  : getGNNamesBySecretariat(divisionalSecretariatFilter).length} available)
+              </span>
             </label>
             <SearchableSelect
               id="locationFilter"
@@ -217,8 +223,8 @@ export default function AdminPersonList({ people, onRefresh }: AdminPersonListPr
               onChange={(value) => setLocationFilter(value)}
               options={[
                 'all',
-                ...(divisionalSecretariatFilter === 'all' 
-                  ? allGNDivisions 
+                ...(divisionalSecretariatFilter === 'all'
+                  ? allGNDivisions
                   : getGNNamesBySecretariat(divisionalSecretariatFilter)
                 )
               ]}
@@ -227,7 +233,7 @@ export default function AdminPersonList({ people, onRefresh }: AdminPersonListPr
                 if (val === 'all') {
                   return divisionalSecretariatFilter === 'all' ? 'All Divisions' : 'All Divisions in Selected Secretariat';
                 }
-                return val;
+                return getGNDisplayValue(val);
               }}
             />
           </div>

@@ -39,9 +39,22 @@ export default function SearchableSelect({
   // Filter options based on search term (only if search is enabled)
   const filteredOptions = hideSearch 
     ? options 
-    : options.filter((option) =>
-        option.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+    : options.filter((option) => {
+        const searchLower = searchTerm.toLowerCase();
+        const optionLower = option.toLowerCase();
+        // Check if search matches the option value
+        if (optionLower.includes(searchLower)) {
+          return true;
+        }
+        // If getDisplayValue is provided, also check the display value (for MPA code search)
+        if (getDisplayValue) {
+          const displayValue = getDisplayValue(option);
+          if (displayValue.toLowerCase().includes(searchLower)) {
+            return true;
+          }
+        }
+        return false;
+      });
 
   // Get display value - if empty or 'all' and getDisplayValue returns empty, show placeholder
   const displayValue = value 

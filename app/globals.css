@@ -904,6 +904,13 @@ select option:disabled {
   margin: 0;
 }
 
+.option-count {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: #6c757d;
+  margin-left: 8px;
+}
+
 .table-container {
   overflow-x: auto;
   overflow-y: visible;
