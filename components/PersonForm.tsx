@@ -622,7 +622,7 @@ export default function PersonForm({ person, onSubmit, onCancel }: PersonFormPro
           </label>
           <SearchableSelect
             id="location"
-            value={formData.location}
+            value={formData.location || ''}
             onChange={(value) => setFormData({ ...formData, location: value })}
             options={availableGNDivisions}
             placeholder="Select Grama Niladari Division"
