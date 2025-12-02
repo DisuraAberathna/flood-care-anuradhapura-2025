@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { FaCopyright, FaCode } from 'react-icons/fa';
+import { FaCopyright, FaCode } from "react-icons/fa";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -15,14 +15,14 @@ export default function Footer() {
         <div className="footer-item">
           <FaCode className="footer-icon" />
           <span>
-            Developed by <strong className="footer-icon">Thenuwari Savindya</strong>
-            {/* <strong>
+            Developed by{" "}
+            {/* <strong className="footer-icon">Thenuwari Savindya</strong> */}
+            <strong>
               Brain<span className="footer-highlight-t">t</span>isa
-            </strong> */}
+            </strong>
           </span>
         </div>
       </div>
     </footer>
   );
 }
-
