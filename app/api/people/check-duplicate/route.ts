@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
-import { gnList, getGNItemByName } from '@/lib/locations';
+import { getCollection } from '@/lib/db';
+import { gnList } from '@/lib/locations';
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,25 +35,35 @@ export async function POST(request: NextRequest) {
 
     const mpaCode = locationItem.mpaCode;
 
-    // Check for duplicate based on name, age, nic, address, and location
-    // Build query conditions
-    let query = `
-      SELECT id, name, age, nic, address, location, created_at 
-      FROM isolated_people 
-      WHERE name = ? AND age = ? AND address = ? AND location = ?
-    `;
-    const params: any[] = [name.trim(), age, address.trim(), location];
+    // Build MongoDB query conditions
+    const baseQuery: any = {
+      name: name.trim(),
+      age: Number(age),
+      address: address.trim(),
+      location: location,
+    };
 
     // Add NIC condition - match if both have NIC or both don't have NIC
+    let query: any;
     if (nic && nic.trim()) {
-      query += ' AND nic = ?';
-      params.push(nic.trim());
+      query = {
+        ...baseQuery,
+        nic: nic.trim(),
+      };
     } else {
-      query += ' AND (nic IS NULL OR nic = "" OR nic = ?)';
-      params.push('');
+      // Match if NIC is null, empty string, or not provided
+      query = {
+        ...baseQuery,
+        $or: [
+          { nic: null },
+          { nic: '' },
+          { nic: { $exists: false } }
+        ]
+      };
     }
 
-    const [rows]: any = await pool.query(query, params);
+    const collection = await getCollection();
+    const rows = await collection.find(query).toArray();
 
     if (rows.length > 0) {
       // Filter results to match MPA code AND divisional secretariat
@@ -68,10 +78,17 @@ export async function POST(request: NextRequest) {
       });
 
       if (matchingRows.length > 0) {
-        return NextResponse.json({
-          isDuplicate: true,
-          existingPerson: matchingRows[0],
-        });
+        // Convert MongoDB _id to id for the first matching row
+        const { _id, ...rest } = matchingRows[0];
+        const formattedPerson = {
+          id: _id.toString(),
+          ...rest,
+        };
+
+      return NextResponse.json({
+        isDuplicate: true,
+          existingPerson: formattedPerson,
+      });
       }
     }
 
@@ -86,4 +103,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

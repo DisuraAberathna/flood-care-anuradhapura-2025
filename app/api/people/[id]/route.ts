@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection } from '@/lib/db';
+import { ObjectId } from 'mongodb';
 
 // GET - Fetch a single person by ID
 export async function GET(
@@ -7,36 +8,35 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const [rows]: any = await pool.query(
-      'SELECT * FROM isolated_people WHERE id = ?',
-      [params.id]
-    );
+    const collection = await getCollection();
+    
+    // Validate ObjectId format
+    if (!ObjectId.isValid(params.id)) {
+      return NextResponse.json(
+        { error: 'Invalid person ID format' },
+        { status: 400 }
+      );
+    }
 
-    if (rows.length === 0) {
+    const person = await collection.findOne({ _id: new ObjectId(params.id) });
+
+    if (!person) {
       return NextResponse.json(
         { error: 'Person not found' },
         { status: 404 }
       );
     }
 
-    // Parse lost_items and family_members JSON
-    const person = rows[0];
-    if (person.lost_items) {
-      try {
-        person.lost_items = typeof person.lost_items === 'string' ? JSON.parse(person.lost_items) : person.lost_items;
-      } catch (e) {
-        person.lost_items = null;
-      }
-    }
-    if (person.family_members) {
-      try {
-        person.family_members = typeof person.family_members === 'string' ? JSON.parse(person.family_members) : person.family_members;
-      } catch (e) {
-        person.family_members = null;
-      }
-    }
+    // Convert MongoDB _id to id
+    const { _id, ...rest } = person;
+    const formattedPerson = {
+      id: _id.toString(),
+      ...rest,
+      lost_items: person.lost_items || null,
+      family_members: person.family_members || null,
+    };
 
-    return NextResponse.json(person);
+    return NextResponse.json(formattedPerson);
   } catch (error: any) {
     console.error('Error fetching person:', error);
     return NextResponse.json(
@@ -62,6 +62,14 @@ export async function PUT(
       );
     }
 
+    // Validate ObjectId format
+    if (!ObjectId.isValid(params.id)) {
+      return NextResponse.json(
+        { error: 'Invalid person ID format' },
+        { status: 400 }
+      );
+    }
+
     // Auto-calculate number_of_members from family_members if provided
     // If no family members, default to 1 (the person themselves)
     let calculatedMembers = number_of_members;
@@ -71,16 +79,28 @@ export async function PUT(
       calculatedMembers = 1; // Default to 1 if no family members provided
     }
 
-    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-    const lostItemsJson = lost_items && Array.isArray(lost_items) ? JSON.stringify(lost_items) : null;
-    const familyMembersJson = family_members && Array.isArray(family_members) ? JSON.stringify(family_members) : null;
+    const now = new Date();
+
+    const updateData = {
+      name: name.trim(),
+      age: Number(age),
+      nic: nic && nic.trim() ? nic.trim() : null,
+      number_of_members: calculatedMembers,
+      address: address.trim(),
+      house_state: house_state.trim(),
+      location: location.trim(),
+      lost_items: lost_items && Array.isArray(lost_items) ? lost_items : null,
+      family_members: family_members && Array.isArray(family_members) ? family_members : null,
+      updated_at: now,
+    };
     
-    const [result]: any = await pool.query(
-      'UPDATE isolated_people SET name = ?, age = ?, nic = ?, number_of_members = ?, address = ?, house_state = ?, location = ?, lost_items = ?, family_members = ?, updated_at = ? WHERE id = ?',
-      [name, age, nic || null, calculatedMembers, address, house_state, location, lostItemsJson, familyMembersJson, now, params.id]
+    const collection = await getCollection();
+    const result = await collection.updateOne(
+      { _id: new ObjectId(params.id) },
+      { $set: updateData }
     );
 
-    if (result.affectedRows === 0) {
+    if (result.matchedCount === 0) {
       return NextResponse.json(
         { error: 'Person not found' },
         { status: 404 }
@@ -103,12 +123,18 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const [result]: any = await pool.query(
-      'DELETE FROM isolated_people WHERE id = ?',
-      [params.id]
-    );
+    // Validate ObjectId format
+    if (!ObjectId.isValid(params.id)) {
+      return NextResponse.json(
+        { error: 'Invalid person ID format' },
+        { status: 400 }
+      );
+    }
 
-    if (result.affectedRows === 0) {
+    const collection = await getCollection();
+    const result = await collection.deleteOne({ _id: new ObjectId(params.id) });
+
+    if (result.deletedCount === 0) {
       return NextResponse.json(
         { error: 'Person not found' },
         { status: 404 }
@@ -124,4 +150,3 @@ export async function DELETE(
     );
   }
 }
-

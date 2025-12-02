@@ -1,115 +1,59 @@
-import mysql from "mysql2/promise";
+import { MongoClient, Db, Collection } from 'mongodb';
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "flood_data",
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+let client: MongoClient | null = null;
+let db: Db | null = null;
 
-export async function initDatabase() {
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
+const MONGODB_DB = process.env.MONGODB_DB || process.env.DB_NAME || 'flood_data';
+
+export async function connectToDatabase(): Promise<Db> {
+  if (db) {
+    return db;
+  }
+
   try {
-    const connection = await pool.getConnection();
-
-    // Create table if it doesn't exist
-    await connection.query(`
-      CREATE TABLE IF NOT EXISTS isolated_people(
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        age INT NOT NULL,
-        nic VARCHAR(50) DEFAULT NULL,
-        number_of_members INT NOT NULL,
-        address TEXT NOT NULL,
-        house_state VARCHAR(100) NOT NULL,
-        location VARCHAR(255) DEFAULT NULL,
-        lost_items LONGTEXT DEFAULT NULL,
-        family_members LONGTEXT DEFAULT NULL,
-        created_at DATETIME DEFAULT NULL,
-        updated_at DATETIME DEFAULT NULL
-      )
-    `);
-
-    // Add lost_items column if it doesn't exist (for existing tables)
-    try {
-      await connection.query(`
-        ALTER TABLE isolated_people 
-        ADD COLUMN lost_items LONGTEXT DEFAULT NULL
-      `);
-    } catch (error: any) {
-      // Column might already exist, ignore error
-      if (
-        error.message.includes("Duplicate column name") ||
-        error.code === "ER_DUP_FIELDNAME"
-      ) {
-        // Column already exists, that's fine
-      } else {
-        console.warn("Could not add lost_items column:", error.message);
-      }
-    }
-
-    // Add family_members column if it doesn't exist (for existing tables)
-    try {
-      await connection.query(`
-        ALTER TABLE isolated_people 
-        ADD COLUMN family_members LONGTEXT DEFAULT NULL
-      `);
-    } catch (error: any) {
-      // Column might already exist, ignore error
-      if (
-        error.message.includes("Duplicate column name") ||
-        error.code === "ER_DUP_FIELDNAME"
-      ) {
-        // Column already exists, that's fine
-      } else {
-        console.warn("Could not add family_members column:", error.message);
-      }
-    }
-
-    // Add location column if it doesn't exist (for existing tables)
-    try {
-      await connection.query(`
-        ALTER TABLE isolated_people 
-        ADD COLUMN location VARCHAR(255) DEFAULT NULL
-      `);
-    } catch (error: any) {
-      // Column might already exist, ignore error
-      if (
-        error.message.includes("Duplicate column name") ||
-        error.code === "ER_DUP_FIELDNAME"
-      ) {
-        // Column already exists, that's fine
-      } else {
-        console.warn("Could not add location column:", error.message);
-      }
-    }
-
-    // Add nic column if it doesn't exist (for existing tables)
-    try {
-      await connection.query(`
-        ALTER TABLE isolated_people 
-        ADD COLUMN nic VARCHAR(50) DEFAULT NULL
-      `);
-    } catch (error: any) {
-      // Column might already exist, ignore error
-      if (
-        error.message.includes("Duplicate column name") ||
-        error.code === "ER_DUP_FIELDNAME"
-      ) {
-        // Column already exists, that's fine
-      } else {
-        console.warn("Could not add nic column:", error.message);
-      }
-    }
-
-    connection.release();
-    console.log("Database initialized successfully");
+    client = new MongoClient(MONGODB_URI);
+    await client.connect();
+    db = client.db(MONGODB_DB);
+    console.log('Connected to MongoDB successfully');
+    return db;
   } catch (error) {
-    console.error("Database initialization error:", error);
+    console.error('Error connecting to MongoDB:', error);
     throw error;
   }
 }
 
-export default pool;
+export async function initDatabase() {
+  try {
+    const database = await connectToDatabase();
+    const collection = database.collection('isolated_people');
+
+    // Create indexes for better query performance
+    await collection.createIndex({ name: 1 });
+    await collection.createIndex({ location: 1 });
+    await collection.createIndex({ created_at: -1 });
+    await collection.createIndex({ nic: 1 });
+
+    console.log('Database initialized successfully');
+  } catch (error) {
+    console.error('Database initialization error:', error);
+    throw error;
+  }
+}
+
+export async function getCollection(name: string = 'isolated_people'): Promise<Collection> {
+  const database = await connectToDatabase();
+  return database.collection(name);
+}
+
+// Close connection (useful for cleanup)
+export async function closeConnection() {
+  if (client) {
+    await client.close();
+    client = null;
+    db = null;
+    console.log('MongoDB connection closed');
+  }
+}
+
+export default { connectToDatabase, getCollection, initDatabase, closeConnection };

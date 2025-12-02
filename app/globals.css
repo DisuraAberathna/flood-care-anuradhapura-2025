@@ -636,6 +636,12 @@ select option:disabled {
   font-size: 0.85rem;
 }
 
+.lost-item-icon {
+  font-size: 0.9rem;
+  color: #892AFA;
+  flex-shrink: 0;
+}
+
 /* Modal-specific lost item badge styling */
 .modal-body .lost-item-badge {
   display: flex;
@@ -971,21 +977,24 @@ tbody td {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   padding: 0.25rem 0.75rem; /* Reduced padding */
   border-radius: 0.5rem; /* Reduced border radius */
   font-size: 0.75rem; /* Smaller font */
   font-weight: 600;
   text-transform: capitalize;
+  white-space: nowrap; /* Prevent text wrapping */
   cursor: pointer;
   border: none;
   transition: background-color 0.3s ease;
 }
 
 .state-badge svg {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   flex-shrink: 0;
-  margin-right: 0;
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1;
 }
 
 /* State-specific colors */
@@ -2271,14 +2280,6 @@ tbody td {
   word-wrap: break-word;
 }
 
-.detail-item .state-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 150px;
-  text-align: center;
-}
 
 .no-data {
   color: #6c757d;

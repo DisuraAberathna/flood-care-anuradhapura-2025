@@ -225,8 +225,8 @@ export default function AdminPersonList({ people, onRefresh }: AdminPersonListPr
               options={[
                 'all',
                 ...(divisionalSecretariatFilter === 'all'
-                  ? allGNDivisions
-                  : getGNNamesBySecretariat(divisionalSecretariatFilter)
+                ? allGNDivisions 
+                : getGNNamesBySecretariat(divisionalSecretariatFilter)
                 )
               ]}
               placeholder={divisionalSecretariatFilter === 'all' ? 'All Divisions' : 'All Divisions in Selected Secretariat'}
@@ -532,6 +532,7 @@ export default function AdminPersonList({ people, onRefresh }: AdminPersonListPr
                         <div className="lost-items-display">
                           {lostItems.map((item, idx) => (
                             <div key={idx} className="lost-item-badge">
+                              <FaBox className="lost-item-icon" />
                               <span className="lost-item-name">{item.name}</span>
                               <div className="lost-item-meta">
                                 <span className="lost-item-qty-badge">x{item.quantity}</span>
