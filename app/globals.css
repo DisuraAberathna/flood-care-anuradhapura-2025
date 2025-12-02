@@ -925,6 +925,17 @@ table {
   border: 2px solid #e0e0e0;
 }
 
+/* Rounded table for admin panel */
+.admin-list .table-container {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+}
+
+.admin-list table {
+  border: none;
+}
+
 thead {
   background-color: #f8f9fa;
 }
@@ -2104,8 +2115,11 @@ tbody td {
 }
 
 .footer-item strong {
-  color: #22d3ee; /* text-cyan-400 */
   font-weight: 600;
+}
+
+.footer-highlight-t {
+  color: #facc15; /* text-yellow-400 */
 }
 
 /* Responsive Footer */
