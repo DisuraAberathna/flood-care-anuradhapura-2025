@@ -16,10 +16,10 @@ export default function Footer() {
           <FaCode className="footer-icon" />
           <span>
             Developed by{" "}
-            {/* <strong className="footer-icon">Thenuwari Savindya</strong> */}
-            <strong>
+            <strong className="footer-icon">Thenuwari Savindya</strong>
+            {/* <strong>
               Brain<span className="footer-highlight-t">t</span>isa
-            </strong>
+            </strong> */}
           </span>
         </div>
       </div>
